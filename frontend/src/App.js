@@ -6,6 +6,8 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 
+const API = process.env.REACT_APP_API_URL;
+
 function App(){
   const[user, setUser] = useState(null);
   const[cart, setCart] = useState([]);
@@ -34,14 +36,13 @@ function App(){
       if (savedCart) setCart(JSON.parse(savedCart));
       if (savedFavs) setFavorites(JSON.parse(savedFavs));
       
-      // Fetch orders from backend
       fetchOrders(userData.id);
     }
   }, []);
 
   const fetchOrders = async (userId) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/orders/${userId}`);
+      const res = await axios.get(`${API}/api/orders/${userId}`);
       setOrders(res.data);
     } catch (err) {
       console.log("Error fetching orders:", err);
@@ -54,34 +55,34 @@ function App(){
     localStorage.setItem(`orders_${userId}`, JSON.stringify(newOrders));
   };
 
-const handleLogin = async ({type, name, email, password}) => {
-  try {
-    if (type === "register") {
-      const res = await axios.post("http://localhost:5000/api/auth/register", {
-        name,
-        email,
-        password
-      });
+  const handleLogin = async ({type, name, email, password}) => {
+    try {
+      if (type === "register") {
+        const res = await axios.post(`${API}/api/auth/register`, {
+          name,
+          email,
+          password
+        });
 
-      const newUser = res.data.user || { name, email };
-      localStorage.setItem("currentUser", JSON.stringify(newUser));
-      setUser(newUser);
-    } 
-    else {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
-        email,
-        password
-      });
+        const newUser = res.data.user || { name, email };
+        localStorage.setItem("currentUser", JSON.stringify(newUser));
+        setUser(newUser);
+      } 
+      else {
+        const res = await axios.post(`${API}/api/auth/login`, {
+          email,
+          password
+        });
 
-      const foundUser = res.data.user || { email };
-      localStorage.setItem("currentUser", JSON.stringify(foundUser));
-      setUser(foundUser);
+        const foundUser = res.data.user || { email };
+        localStorage.setItem("currentUser", JSON.stringify(foundUser));
+        setUser(foundUser);
+      }
+    } catch (err) {
+      alert("Login/Register failed");
+      console.log(err);
     }
-  } catch (err) {
-    alert("Login/Register failed");
-    console.log(err);
-  }
-};
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
@@ -132,8 +133,7 @@ const handleLogin = async ({type, name, email, password}) => {
     const total = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
     
     try {
-      // Send order to backend
-      const res = await axios.post("http://localhost:5000/api/orders", {
+      const res = await axios.post(`${API}/api/orders`, {
         userId: user.id,
         items: cart,
         totalPrice: total
