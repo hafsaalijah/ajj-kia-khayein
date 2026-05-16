@@ -12,7 +12,12 @@ const orderRoutes = require("./routes/orderRoutes");
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://ajj-kia-khayein.vercel.app",
+    credentials: true
+  })
+);
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI)

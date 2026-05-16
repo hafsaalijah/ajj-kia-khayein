@@ -41,7 +41,9 @@ function App(){
 
   const fetchOrders = async (userId) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/orders/${userId}`);
+      const res = await axios.get(
+  `${process.env.REACT_APP_API_URL}/api/orders/${userId}`
+    );
       setOrders(res.data);
     } catch (err) {
       console.log("Error fetching orders:", err);
@@ -57,7 +59,9 @@ function App(){
 const handleLogin = async ({type, name, email, password}) => {
   try {
     if (type === "register") {
-      const res = await axios.post("http://localhost:5000/api/auth/register", {
+      const res = await axios.post(
+  `${process.env.REACT_APP_API_URL}/api/auth/register`,
+      {
         name,
         email,
         password
@@ -68,7 +72,9 @@ const handleLogin = async ({type, name, email, password}) => {
       setUser(newUser);
     } 
     else {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
+      const res = await axios.post(
+  `${process.env.REACT_APP_API_URL}/api/auth/login`,
+      {
         email,
         password
       });
@@ -133,7 +139,9 @@ const handleLogin = async ({type, name, email, password}) => {
     
     try {
       // Send order to backend
-      const res = await axios.post("http://localhost:5000/api/orders", {
+      const res = await axios.post(
+  `${process.env.REACT_APP_API_URL}/api/orders`,
+      {
         userId: user.id,
         items: cart,
         totalPrice: total
