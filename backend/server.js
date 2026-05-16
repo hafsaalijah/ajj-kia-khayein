@@ -24,8 +24,9 @@ mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB Connected"))
 .catch(err => console.log(err));
 
-app.use("/api/auth", authRoutes);
-app.use("/api/orders", orderRoutes);
+// IMPORTANT: These lines register your routes
+app.use("/", authRoutes);     // This makes /register and /login work
+app.use("/", orderRoutes);    // This makes /orders work
 
 app.get("/", (req, res) => {
     res.send("Food Delivery Backend Running");
