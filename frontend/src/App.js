@@ -6,7 +6,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 
-// Backend URL (hardcoded for Vercel deployment) - NO /api here
+// Backend URL (no /api, no /auth - just the base URL)
 const API_URL = "https://ajj-kia-khayein-production.up.railway.app";
 
 function App() {
@@ -37,14 +37,13 @@ function App() {
       if (savedCart) setCart(JSON.parse(savedCart));
       if (savedFavs) setFavorites(JSON.parse(savedFavs));
 
-      // Fetch orders from backend
       fetchOrders(userData.id);
     }
   }, []);
 
   const fetchOrders = async (userId) => {
     try {
-      const res = await axios.get(`${API_URL}/api/orders/${userId}`);
+      const res = await axios.get(`${API_URL}/orders/${userId}`);
       setOrders(res.data);
     } catch (err) {
       console.log("Error fetching orders:", err);
@@ -60,7 +59,7 @@ function App() {
   const handleLogin = async ({ type, name, email, password }) => {
     try {
       if (type === "register") {
-        const res = await axios.post(`${API_URL}/api/auth/register`, {
+        const res = await axios.post(`${API_URL}/register`, {
           name,
           email,
           password
@@ -70,7 +69,7 @@ function App() {
         localStorage.setItem("currentUser", JSON.stringify(newUser));
         setUser(newUser);
       } else {
-        const res = await axios.post(`${API_URL}/api/auth/login`, {
+        const res = await axios.post(`${API_URL}/login`, {
           email,
           password
         });
@@ -132,8 +131,7 @@ function App() {
     const total = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
 
     try {
-      // Send order to backend
-      const res = await axios.post(`${API_URL}/api/orders`, {
+      const res = await axios.post(`${API_URL}/orders`, {
         userId: user.id,
         items: cart,
         totalPrice: total
