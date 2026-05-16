@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React,{useState, useEffect} from "react";
 import Login from "./Components/Login";
 import { foodImages, carouselImages, restaurants, menuItems } from "./Components/Data";
 import axios from "axios";
@@ -6,24 +6,21 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 
-// Backend URL (no /api, no /auth - just the base URL)
-const API_URL = "https://ajj-kia-khayein-production.up.railway.app";
-
-function App() {
-  const [user, setUser] = useState(null);
-  const [cart, setCart] = useState([]);
-  const [favorites, setFavorites] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [activeTab, setActiveTab] = useState("menu");
-  const [trackingOrder, setTrackingOrder] = useState(null);
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
+function App(){
+  const[user, setUser] = useState(null);
+  const[cart, setCart] = useState([]);
+  const[favorites, setFavorites] = useState([]);
+  const[orders, setOrders] = useState([]);
+  const[activeTab, setActiveTab] = useState("menu");
+  const[trackingOrder, setTrackingOrder] = useState(null);
+  const[selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const[currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % carouselImages.length);
     }, 4000);
-
+    
     return () => clearInterval(interval);
   }, []);
 
@@ -36,14 +33,15 @@ function App() {
       const savedFavs = localStorage.getItem(`favorites_${userData.id}`);
       if (savedCart) setCart(JSON.parse(savedCart));
       if (savedFavs) setFavorites(JSON.parse(savedFavs));
-
+      
+      // Fetch orders from backend
       fetchOrders(userData.id);
     }
   }, []);
 
   const fetchOrders = async (userId) => {
     try {
-      const res = await axios.get(`${API_URL}/orders/${userId}`);
+      const res = await axios.get(`http://localhost:5000/api/orders/${userId}`);
       setOrders(res.data);
     } catch (err) {
       console.log("Error fetching orders:", err);
@@ -56,33 +54,34 @@ function App() {
     localStorage.setItem(`orders_${userId}`, JSON.stringify(newOrders));
   };
 
-  const handleLogin = async ({ type, name, email, password }) => {
-    try {
-      if (type === "register") {
-        const res = await axios.post(`${API_URL}/register`, {
-          name,
-          email,
-          password
-        });
+const handleLogin = async ({type, name, email, password}) => {
+  try {
+    if (type === "register") {
+      const res = await axios.post("http://localhost:5000/api/auth/register", {
+        name,
+        email,
+        password
+      });
 
-        const newUser = res.data.user || { name, email, id: Date.now() };
-        localStorage.setItem("currentUser", JSON.stringify(newUser));
-        setUser(newUser);
-      } else {
-        const res = await axios.post(`${API_URL}/login`, {
-          email,
-          password
-        });
+      const newUser = res.data.user || { name, email };
+      localStorage.setItem("currentUser", JSON.stringify(newUser));
+      setUser(newUser);
+    } 
+    else {
+      const res = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password
+      });
 
-        const foundUser = res.data.user || { email, id: Date.now() };
-        localStorage.setItem("currentUser", JSON.stringify(foundUser));
-        setUser(foundUser);
-      }
-    } catch (err) {
-      alert("Login/Register failed");
-      console.log(err);
+      const foundUser = res.data.user || { email };
+      localStorage.setItem("currentUser", JSON.stringify(foundUser));
+      setUser(foundUser);
     }
-  };
+  } catch (err) {
+    alert("Login/Register failed");
+    console.log(err);
+  }
+};
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
@@ -95,13 +94,14 @@ function App() {
   const addToCart = (item) => {
     const existing = cart.find(i => i.itemId === item.id);
     let newCart;
-    if (existing) {
-      newCart = cart.map(i => i.itemId === item.id ? { ...i, quantity: i.quantity + 1 } : i);
-    } else {
-      newCart = [...cart, { itemId: item.id, name: item.name, price: item.price, quantity: 1, restId: item.restId }];
+    if(existing) {
+      newCart = cart.map(i => i.itemId === item.id ? {...i, quantity: i.quantity + 1} :i);
+    }
+    else{
+      newCart = [...cart, {itemId: item.id, name:item.name, price:item.price, quantity:1, restId: item.restId}];
     }
 
-    setCart(newCart);
+    setCart(newCart); 
     saveUserData(user.id, newCart, favorites, orders);
     toast.success("Added to Cart !🤭", {
       position: "bottom-right",
@@ -119,7 +119,8 @@ function App() {
     let newFavs;
     if (favorites.find(f => f.id === item.id)) {
       newFavs = favorites.filter(f => f.id !== item.id);
-    } else {
+    }
+    else{
       newFavs = [...favorites, item];
     }
     setFavorites(newFavs);
@@ -129,17 +130,18 @@ function App() {
   const placeOrder = async () => {
     if (cart.length === 0) return;
     const total = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-
+    
     try {
-      const res = await axios.post(`${API_URL}/orders`, {
+      // Send order to backend
+      const res = await axios.post("http://localhost:5000/api/orders", {
         userId: user.id,
         items: cart,
         totalPrice: total
       });
 
       const newOrder = {
-        id: res.data.order?.id || Date.now(),
-        date: new Date().toLocaleString(),
+        id: res.data.order.id,
+        date: new Date(res.data.order.date).toLocaleString(),
         items: cart,
         total: total,
         status: "preparing"
@@ -156,11 +158,11 @@ function App() {
       });
 
       setTimeout(() => {
-        setOrders(prev => prev.map(o => o.id === newOrder.id ? { ...o, status: "onway" } : o));
-        setTrackingOrder(prev => prev ? { ...prev, status: "onway" } : null);
+        setOrders(prev => prev.map(o => o.id === newOrder.id ? {...o, status:"onway"} : o));
+        setTrackingOrder(prev => prev ? {...prev, status:"onway"}: null);
       }, 5000);
       setTimeout(() => {
-        setOrders(prev => prev.map(o => o.id === newOrder.id ? { ...o, status: "delivered" } : o));
+        setOrders(prev => prev.map(o => o.id === newOrder.id ? {...o, status:"delivered"} :o));
         setTrackingOrder(null);
       }, 10000);
       setActiveTab("orders");
@@ -174,18 +176,17 @@ function App() {
   };
 
   const allItems = Object.values(menuItems).flat();
-  const recommendedItems = allItems.filter(item => !favorites.find(f => f.id === item.id)).slice(0, 4);
-
+  const recommendedItems = allItems.filter(item => !favorites.find(f => f.id === item.id)).slice(0,4);
   if (!user) return <Login onLogin={handleLogin} />;
 
-  return (
+  return(
     <div className="app">
       <ToastContainer />
       <nav className="navbar">
         <div className="nav-container">
           <h1 className="logo"> 🍕 Aaj kia Khaien? </h1>
           <div className="nav-right">
-            <span className="user-name">{user.name || user.email}</span>
+            <span className="user-name" >{user.name}</span>
             <button className="logout-btn" onClick={handleLogout}>Logout</button>
           </div>
         </div>
@@ -194,7 +195,7 @@ function App() {
       <div className="main-container">
         {activeTab === "menu" && (
           <div className="carousel">
-            <div className="carousel-track" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
+            <div className="carousel-track" style={{transform: `translateX(-${currentSlide * 100}%)`}}>
               {carouselImages.map(img => (
                 <div key={img.id} className="carousel-slide">
                   <img src={img.url} alt={img.title} />
@@ -202,25 +203,25 @@ function App() {
                     <h3>{img.title}</h3>
                     <p>{img.subtitle}</p>
                   </div>
-                </div>
+                </div>    
               ))}
             </div>
-          </div>
+          </div>  
         )}
 
         <div className="tabs">
           {["menu", "cart", "orders", "profile"].map(tab => (
-            <button
-              key={tab}
-              className={`tab ${activeTab === tab ? "tab-active" : "tab-inactive"}`}
-              onClick={() => { setActiveTab(tab); setSelectedRestaurant(null); }}
-            >
-              {tab === "menu" && "🍽️ Menu"}
-              {tab === "cart" && `🛒 Cart (${cart.reduce((s, i) => s + i.quantity, 0)})`}
-              {tab === "orders" && "📦 Orders"}
-              {tab === "profile" && "❤️ Favorites"}
-            </button>
-          ))}
+          <button
+          key={tab}
+          className={`tab ${activeTab === tab ? "tab-active" : "tab-inactive"}`}
+          onClick={() => { setActiveTab(tab); setSelectedRestaurant(null); }}
+          >
+          {tab === "menu" && "🍽️ Menu"}
+          {tab === "cart" && `🛒 Cart (${cart.reduce((s,i)=>s+i.quantity,0)})`}
+          {tab === "orders" && "📦 Orders"}
+          {tab === "profile" && "❤️ Favorites"}
+          </button>
+        ))}
         </div>
 
         {activeTab === 'menu' && !selectedRestaurant && (
@@ -240,24 +241,24 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'menu' && selectedRestaurant && (
+         {activeTab === 'menu' && selectedRestaurant && (
           <>
             <button className="back-btn" onClick={() => setSelectedRestaurant(null)}>← Back to Restaurants</button>
             <div className="food-grid">
-              {menuItems[selectedRestaurant.id]?.map(item => (
+              {menuItems[selectedRestaurant.id].map(item => (
                 <div key={item.id} className="food-card">
                   <img src={foodImages[item.id]} alt={item.name} />
                   <div className="food-info">
                     <h4>{item.name}</h4>
                     <p className="price">Rs {item.price}</p>
                     <div className="food-actions">
-                      <button
+                      <button 
                         className={`fav-btn ${favorites.find(f => f.id === item.id) ? 'fav-active' : ''}`}
                         onClick={() => toggleFavorite(item)}
                       >
                         ❤️
                       </button>
-                      <button
+                      <button 
                         className={`cart-btn ${cart.find(c => c.itemId === item.id) ? 'cart-added' : ''}`}
                         onClick={() => addToCart(item)}
                       >
@@ -289,7 +290,7 @@ function App() {
                   </div>
                 ))}
                 <div className="cart-total">
-                  <strong>Total: Rs {cart.reduce((s, i) => s + (i.price * i.quantity), 0)}</strong>
+                  <strong>Total: Rs {cart.reduce((s,i)=>s+(i.price*i.quantity),0)}</strong>
                   <button className="place-order-btn" onClick={placeOrder}>Place Order →</button>
                 </div>
               </>
@@ -320,7 +321,7 @@ function App() {
               <div className="tracking-card">
                 <strong>📍 Live: {trackingOrder.status === 'preparing' ? 'Preparing your order...' : 'Out for delivery!'}</strong>
                 <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: trackingOrder.status === 'preparing' ? '50%' : '90%' }}></div>
+                  <div className="progress-fill" style={{width: trackingOrder.status === 'preparing' ? '50%' : '90%'}}></div>
                 </div>
               </div>
             )}
@@ -359,8 +360,8 @@ function App() {
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
   );
 }
 

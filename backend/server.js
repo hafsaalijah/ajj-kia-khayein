@@ -12,21 +12,15 @@ const orderRoutes = require("./routes/orderRoutes");
 
 const app = express();
 
-app.use(
-  cors({
-    origin: "https://ajj-kia-khayein.vercel.app",
-    credentials: true
-  })
-);
+app.use(cors());
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB Connected"))
 .catch(err => console.log(err));
 
-// IMPORTANT: These lines register your routes
-app.use("/", authRoutes);     // This makes /register and /login work
-app.use("/", orderRoutes);    // This makes /orders work
+app.use("/api/auth", authRoutes);
+app.use("/api/orders", orderRoutes);
 
 app.get("/", (req, res) => {
     res.send("Food Delivery Backend Running");
